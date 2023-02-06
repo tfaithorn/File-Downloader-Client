@@ -1,6 +1,6 @@
 # File-Downloader-Application
 Simple application to download files using a spreadsheet that contains: a URL, filename, relative folder path, countryId, post data.
-The application is meant to be used in combination with the World Manager platform 
+The application is meant to be used for the World Manager platform.
 
 ##
 Notes:
