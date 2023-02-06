@@ -1,6 +1,7 @@
 # File-Downloader-Application
 Simple application to download files using a spreadsheet that contains: a URL, filename, relative folder path, countryId, post data.
 The application is meant to be used in combination with the World Manager platform.
+Check out downloadclient.cs for basic usage.
 
 ##
 Notes:
