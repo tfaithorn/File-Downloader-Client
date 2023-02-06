@@ -4,7 +4,7 @@ The application is meant to be used in combination with the World Manager platfo
 
 ##
 Notes:
-- Invalid characters are stripped from the file & folder names.
+- Invalid characters are stripped from the folder & file names.
 - If the folders in the relative path do not exist they will be created automatically.
 
 ##
