@@ -46,6 +46,9 @@ namespace File_Downloader
             this.button6 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
+            this.webView21 = new Microsoft.Web.WebView2.WinForms.WebView2();
+            this.button8 = new System.Windows.Forms.Button();
+            ((System.ComponentModel.ISupportInitialize)(this.webView21)).BeginInit();
             this.SuspendLayout();
             // 
             // Button1
@@ -95,7 +98,7 @@ namespace File_Downloader
             this.richTextBox1.ForeColor = System.Drawing.SystemColors.Window;
             this.richTextBox1.Location = new System.Drawing.Point(338, 63);
             this.richTextBox1.Name = "richTextBox1";
-            this.richTextBox1.Size = new System.Drawing.Size(484, 292);
+            this.richTextBox1.Size = new System.Drawing.Size(302, 292);
             this.richTextBox1.TabIndex = 6;
             this.richTextBox1.Text = "";
             this.richTextBox1.WordWrap = false;
@@ -183,9 +186,9 @@ namespace File_Downloader
             // 
             // button6
             // 
-            this.button6.Location = new System.Drawing.Point(839, 63);
+            this.button6.Location = new System.Drawing.Point(722, 12);
             this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(92, 46);
+            this.button6.Size = new System.Drawing.Size(92, 48);
             this.button6.TabIndex = 20;
             this.button6.Text = "List Empty Folders";
             this.button6.UseVisualStyleBackColor = true;
@@ -193,7 +196,7 @@ namespace File_Downloader
             // 
             // button7
             // 
-            this.button7.Location = new System.Drawing.Point(839, 116);
+            this.button7.Location = new System.Drawing.Point(820, 12);
             this.button7.Name = "button7";
             this.button7.Size = new System.Drawing.Size(92, 48);
             this.button7.TabIndex = 21;
@@ -214,11 +217,35 @@ namespace File_Downloader
             this.comboBox1.TabIndex = 22;
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged_1);
             // 
+            // webView21
+            // 
+            this.webView21.AllowExternalDrop = true;
+            this.webView21.CreationProperties = null;
+            this.webView21.DefaultBackgroundColor = System.Drawing.Color.White;
+            this.webView21.Location = new System.Drawing.Point(646, 63);
+            this.webView21.Name = "webView21";
+            this.webView21.Size = new System.Drawing.Size(266, 292);
+            this.webView21.TabIndex = 23;
+            this.webView21.ZoomFactor = 1D;
+            this.webView21.Click += new System.EventHandler(this.webView21_Click);
+            // 
+            // button8
+            // 
+            this.button8.Location = new System.Drawing.Point(626, 12);
+            this.button8.Name = "button8";
+            this.button8.Size = new System.Drawing.Size(90, 45);
+            this.button8.TabIndex = 24;
+            this.button8.Text = "Bulk Upload";
+            this.button8.UseVisualStyleBackColor = true;
+            this.button8.Click += new System.EventHandler(this.button8_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(935, 450);
+            this.Controls.Add(this.button8);
+            this.Controls.Add(this.webView21);
             this.Controls.Add(this.comboBox1);
             this.Controls.Add(this.button7);
             this.Controls.Add(this.button6);
@@ -239,6 +266,7 @@ namespace File_Downloader
             this.Name = "Form1";
             this.Text = "File Downloader";
             this.Load += new System.EventHandler(this.Form1_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.webView21)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -262,6 +290,8 @@ namespace File_Downloader
         private System.Windows.Forms.Button button6;
         private System.Windows.Forms.Button button7;
         private System.Windows.Forms.ComboBox comboBox1;
+        private Microsoft.Web.WebView2.WinForms.WebView2 webView21;
+        private System.Windows.Forms.Button button8;
     }
 }
 

@@ -15,7 +15,7 @@ namespace File_Downloader
     {
         DownloaderClient downloaderClient;
 
-        public ScreenshotOptions(DownloaderClient downloaderClient)
+        public ScreenshotOptions(WebViewClient downloaderClient)
         {
             InitializeComponent();
             string platformUrl = downloaderClient.GetPlatformUrl();

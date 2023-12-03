@@ -16,12 +16,14 @@ namespace File_Downloader
         private Label loginLabel;
         private Label usernameLabel;
         private DownloaderClient downloaderClient;
+        private WebViewClient webViewClient;
 
         public LoginForm(DownloaderClient downloaderClient)
         {
             InitializeComponent();
             this.Text = "Login";
             this.downloaderClient = downloaderClient;
+            //this.webViewClient = webViewClient;
         }
 
         public void SetTextConsole(TextConsole textConsoleObj)
@@ -53,6 +55,7 @@ namespace File_Downloader
         {
             string username = textBox1.Text;
             string password = textBox2.Text;
+            
             downloaderClient.SetLoginCredentials(username, password);
             usernameLabel.Text = username;
 

@@ -25,10 +25,16 @@ namespace File_Downloader
         {
             InitializeComponent();
             comboBox1.SelectedIndex = 0;
-            downloaderClient = new DownloaderClient();
+
+            //downloaderClient = new WebViewClient(webView21);    
+            //downloaderClient .Initialize().Wait();
+            downloaderClient = new HttpDownloaderClient();
+            
+
             textConsole = new TextConsole(richTextBox1);
             fileVerifier = new FileVerifier(textConsole);
             downloaderClient.SetTextConsole(textConsole);
+
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -60,10 +66,17 @@ namespace File_Downloader
                 string path = betterFolderBrowser.SelectedPath;
                 label3.Text = betterFolderBrowser.SelectedPath;
                 downloaderClient.SetDestinationPath(betterFolderBrowser.SelectedPath);
+
+                //downloaderClient.folderDestinationPath = betterFolderBrowser.SelectedPath;
             }
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private async void button4_Click(object sender, EventArgs e)
+        {
+           await ReadWorkBook();
+        }
+
+        private async Task ReadWorkBook()
         {
             OpenFileDialog fileDiablog = new OpenFileDialog();
             string excelFilePath;
@@ -97,13 +110,13 @@ namespace File_Downloader
                     string countryID = ((Excel.Range)xlWorksheet.Cells[i + 2, 4]).Value.ToString();
                     string payload = (Excel.Range)xlWorksheet.Cells[i + 2, 5] != null ? Convert.ToString(((Excel.Range)xlWorksheet.Cells[i + 2, 5]).Value) : null;
 
-                    relativeDestinationPath = downloaderClient.SanitizeFolderPath(relativeDestinationPath);
+                    relativeDestinationPath = DownloaderClient.SanitizeFolderPath(relativeDestinationPath);
                     filename = downloaderClient.SanitizeFileName(filename);
 
                     //check if the filename contains illegal characters
-                    foreach (char invalidCharacter in downloaderClient.invalidFileCharacters)
+                    foreach (char invalidCharacter in DownloaderClient.invalidFileCharacters)
                     {
-                        if (filename.IndexOf(invalidCharacter,0) != -1)
+                        if (filename.IndexOf(invalidCharacter, 0) != -1)
                         {
                             string errorText = "Warning: '" + filename + "' contains an invalid character '" + invalidCharacter + "', which will be removed.";
                             if (!rowContainsError)
@@ -111,7 +124,8 @@ namespace File_Downloader
                                 rowContainsError = true;
                                 textConsole.UpdateLine(errorText);
                             }
-                            else {
+                            else
+                            {
                                 textConsole.WriteLine(errorText);
                             }
                         }
@@ -127,7 +141,8 @@ namespace File_Downloader
                             {
                                 textConsole.UpdateLine(errorText);
                             }
-                            else {
+                            else
+                            {
                                 textConsole.WriteLine(errorText);
                             }
 
@@ -140,7 +155,8 @@ namespace File_Downloader
                     {
                         textConsole.WriteLine("Reading row: " + (i + 1) + " / " + (cellCount - 1));
                     }
-                    else {
+                    else
+                    {
                         textConsole.UpdateLine("Reading row: " + (i + 1) + " / " + (cellCount - 1));
                     }
 
@@ -164,20 +180,27 @@ namespace File_Downloader
                 downloaderClient.overrideFiles = redownloadFiles.Checked;
                 //downloaderClient.downloadAsImage = downloadAsImageCheckBox.Checked;
 
+                downloaderClient.stopOnError = stopOnErrorBox.Checked;
+                downloaderClient.overrideFiles = redownloadFiles.Checked;
+
                 if (comboBox1.Text == "GET")
                 {
-                    downloaderClient.formMethod = DownloaderClient.Method.GET;
+                    downloaderClient.formMethod = HttpDownloaderClient.Method.GET;
                 }
                 else
                 {
-                    downloaderClient.formMethod = DownloaderClient.Method.POST;
+                    downloaderClient.formMethod = HttpDownloaderClient.Method.POST;
                 }
 
                 textConsole.WriteLine("Starting Download...");
 
-                if (downloaderClient.downloadAsImage)
+                if (downloaderClient is WebViewClient)
                 {
-                    await DownloadAsImage();
+                    var webViewClient = (WebViewClient)downloaderClient;
+                    if (webViewClient.downloadAsImage)
+                    {
+                        //await DownloadAsImage();
+                    }
                 }
                 else
                 {
@@ -216,16 +239,18 @@ namespace File_Downloader
                 textConsole.WriteLine((i + 1) + " / " + excelResults.Count + " - " + uri.OriginalString);
 
                 var downloadStatus = await downloaderClient.DownloadFileTaskAsync(uri, excelResults[i]);
+                //var downloadStatus = await webViewClient.DownloadFileTaskAsync(uri, excelResults[i]);
+
 
                 if (downloadStatus == false && downloaderClient.stopOnError)
+                //if (downloadStatus == false && webViewClient.stopOnError)
                 {
                     cancelDownload = true;
                 }
             }
-        }
 
-        private async Task  DownloadAsImage()
-        {
+            return;
+            //for old client
             for (int i = 0; i < excelResults.Count; i++)
             {
                 if (cancelDownload)
@@ -245,7 +270,7 @@ namespace File_Downloader
 
                 textConsole.WriteLine((i + 1) + " / " + excelResults.Count + " - " + uri.OriginalString);
 
-                var downloadStatus = await downloaderClient.DownloadImageTaskAsync(uri, excelResults[i]);
+                var downloadStatus = await downloaderClient.DownloadFileTaskAsync(uri, excelResults[i]);
 
                 if (downloadStatus == false && downloaderClient.stopOnError)
                 {
@@ -253,6 +278,36 @@ namespace File_Downloader
                 }
             }
         }
+
+        //private async Task  DownloadAsImage()
+        //{
+        //    for (int i = 0; i < excelResults.Count; i++)
+        //    {
+        //        if (cancelDownload)
+        //        {
+        //            cancelDownload = false;
+        //            return;
+        //        }
+
+        //        //create download url for file
+        //        Uri uri = new Uri(excelResults[i].itemID);
+
+        //        if (excelResults[i].path == null)
+        //        {
+        //            cancelDownload = false;
+        //            return;
+        //        }
+
+        //        textConsole.WriteLine((i + 1) + " / " + excelResults.Count + " - " + uri.OriginalString);
+
+        //        var downloadStatus = await downloaderClient.DownloadImageTaskAsync(uri, excelResults[i]);
+
+        //        if (downloadStatus == false && downloaderClient.stopOnError)
+        //        {
+        //            cancelDownload = true;
+        //        }
+        //    }
+        //}
 
         private void button2_Click(object sender, EventArgs e)
         {
@@ -369,8 +424,22 @@ namespace File_Downloader
 
         private void screenshotOptions_Click(object sender, EventArgs e)
         {
-            var screenshotOptions = new ScreenshotOptions(this.downloaderClient);
-            screenshotOptions.Show();
+            if (downloaderClient is WebViewClient)
+            {
+                var screenshotOptions = new ScreenshotOptions(downloaderClient as WebViewClient);
+                screenshotOptions.Show();
+            }
+        }
+
+        private void webView21_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button8_Click(object sender, EventArgs e)
+        {
+            var uploadClient = new UploadClient();
+            uploadClient.Show();
         }
     }
 }
