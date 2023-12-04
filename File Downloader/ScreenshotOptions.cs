@@ -15,27 +15,26 @@ namespace File_Downloader
     {
         DownloaderClient downloaderClient;
 
-        public ScreenshotOptions(WebViewClient downloaderClient)
-        {
-            InitializeComponent();
-            string platformUrl = downloaderClient.GetPlatformUrl();
-            this.downloaderClient = downloaderClient;
+        //public ScreenshotOptions(WebViewClient downloaderClient)
+        //{
+        //    InitializeComponent();
+        //    this.downloaderClient = downloaderClient;
 
-            Uri outUri;
-            optionsWebView.BringToFront();
+        //    Uri outUri;
+        //    optionsWebView.BringToFront();
 
-            if (Uri.TryCreate(platformUrl, UriKind.Absolute, out outUri))
-            {
-                optionsWebView.Source = new Uri(platformUrl);
-            }
-            else
-            {
-                //optionsWebView.Source = new Uri("https://www.youtube.com/watch?v=dQw4w9WgXcQ&autoplay=1");
-                Console.WriteLine("Video loaded?");
-            }
+        //    if (Uri.TryCreate(platformUrl, UriKind.Absolute, out outUri))
+        //    {
+        //        optionsWebView.Source = new Uri(platformUrl);
+        //    }
+        //    else
+        //    {
+        //        //optionsWebView.Source = new Uri("https://www.youtube.com/watch?v=dQw4w9WgXcQ&autoplay=1");
+        //        Console.WriteLine("Video loaded?");
+        //    }
 
-            textBox1.Text = platformUrl;
-        }
+        //    textBox1.Text = platformUrl;
+        //}
 
         private void ScreenshotOptions_Load(object sender, EventArgs e)
         {

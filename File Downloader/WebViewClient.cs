@@ -7,49 +7,26 @@ using System.Drawing;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
+
 
 namespace File_Downloader
 {
     public class WebViewClient : DownloaderClient
     {
         private WebView2 webView;
-        private string platformUrl;
         private string currentCountryId = "0";
-        private TextConsole textConsole;
-        private string loginUrl;
-        public string username;
-        public string password;
-        public Method formMethod;
-        public bool overrideFiles;
-        public bool stopOnError;
-        public string folderDestinationPath;
         private TaskCompletionSource<bool> downloadFinishedEvent;
-        private string currFullPath;
         public bool downloadAsImage;
 
-
-        private const string emulationPath = "/emulation";
-        //System.EventHandler<CoreWebView2DownloadStartingEventArgs> currEventHandler;
-
-        public WebViewClient(WebView2 webView2)
+        public WebViewClient(WebView2 webView2, TextConsole textConsole)
         { 
             this.webView = webView2;
             this.webView.Source = new Uri("https://google.com");
-            Task.Run(Initialize);
-        }
-
-        private async void SetUpWebView()
-        {
-            var op = new Microsoft.Web.WebView2.Core.CoreWebView2EnvironmentOptions("--disable-web-security");
-            var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, null, op);
-            await this.webView.EnsureCoreWebView2Async(env);
-        }
-
-        public void SetTextConsole(TextConsole textConsole)
-        {
             this.textConsole = textConsole;
+            Task.Run(Initialize);
         }
 
         private async Task Initialize()
@@ -59,14 +36,19 @@ namespace File_Downloader
             await webView.EnsureCoreWebView2Async(env);
         }
 
-        private async Task<bool> Login()
+        public override async Task<bool> Login(string requestUrl)
         {
             try
             {
+                this.platformUrl = ExtractPlatformUrl(requestUrl);
+                currentCountryId = "0";
+
                 webView.Source = new Uri(platformUrl);
                 await WaitForNavigation();
 
                 //wait for the login to occur
+                await WaitForNavigation();
+
                 await WaitForNavigation();
 
                 return true;
@@ -82,14 +64,6 @@ namespace File_Downloader
 
         public override async Task<bool> DownloadFileTaskAsync(Uri uri, ExcelRow row)
         {
-            var reqPlatformUrl = ExtractPlatformUrl(uri.OriginalString);
-            if (reqPlatformUrl != platformUrl)
-            {
-                this.platformUrl = reqPlatformUrl;
-                await Login();
-                currentCountryId = "0";
-            }
-
             if (row.countryID != currentCountryId)
             {
                 await EmulateCountry(row.countryID);
@@ -104,7 +78,7 @@ namespace File_Downloader
             try
             {
                 //Note: extra slashes are used on later .net versions to allow file paths with over 255 characters (will require windows flag set)
-                string fullPath = folderDestinationPath + row.path + "\\" + row.filename;
+                string fullPath = destinationPath + row.path + "\\" + row.filename;
                 string directory = Path.GetDirectoryName(fullPath);
 
                 if (directory != null && !Directory.Exists(directory))
@@ -120,7 +94,6 @@ namespace File_Downloader
                     downloadFinishedEvent?.TrySetResult(true);
                 };
 
-                currFullPath = fullPath;
                 webView.CoreWebView2.DownloadStarting += currEventHandler;
 
                 if (formMethod == Method.POST)
@@ -155,7 +128,6 @@ namespace File_Downloader
 
                 if (formMethod == Method.GET)
                 {
-                    //NOTE: Still not working. Need to wait for request before starting new one of the file names get mixed up
                     await webView.ExecuteScriptAsync($@"fetch('{uri}').then(function(t) {{
                         return t.blob().then((b)=>{{
                             var a = document.createElement('a');
@@ -164,9 +136,8 @@ namespace File_Downloader
                             a.click();
                         }}
                         );
-                    }});console.log('javascript is executing?');
+                    }});console.log('Downloading File');
                     ");
-
                     downloadFinishedEvent = new TaskCompletionSource<bool>();
                     await downloadFinishedEvent.Task;
 
@@ -188,13 +159,13 @@ namespace File_Downloader
         {
             textConsole.WriteLine("Changing Country:" + currentCountryId + " to " + countryId);
             var emulationUrl = platformUrl + emulationPath;
-
             await Task.Delay(1000);
-            await webView.ExecuteScriptAsync(
-                    $@"
+            var script = $@"
                     console.log('[data-country-id=""{countryId}""]');
                     const countryLink = document.querySelector('[data-country-id=""{countryId}""]');
-                    countryLink.click();");
+                    countryLink.click();";
+
+            await webView.ExecuteScriptAsync(script);
             await WaitForNavigation();
 
             return true;

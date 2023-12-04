@@ -12,15 +12,12 @@ namespace File_Downloader
 {
     public class HttpDownloaderClient : DownloaderClient
     {
-        public readonly char[] invalidFileCharacters;
-        public readonly char[] invalidFolderCharacters;
         private HttpClient client;
         private HttpClientHandler handler;
 
         public HttpDownloaderClient()
         {
             this.handler = new HttpClientHandler();
-            this.platformUrl = "";
             this.destinationPath = "";
             this.currentCountryID = "0";
             this.formMethod = Method.GET;
@@ -31,7 +28,7 @@ namespace File_Downloader
             this.client = new HttpClient(handler);
 
             //Add header to prevent platform from rejecting request
-            this.client.DefaultRequestHeaders.Add("User-Agent", "Custom");
+            this.client.DefaultRequestHeaders.Add("User-Agent", "custom");
 
             //10 minutes (to match platform timer)
             this.client.Timeout = new System.TimeSpan(0,10,0);
@@ -61,23 +58,28 @@ namespace File_Downloader
 
         }
 
-        private bool CheckNewPlatformUrl(string url)
-        {
-            var uri = new Uri(url);
-            var newUrl = uri.Scheme + "://" + uri.Host;
-            if (platformUrl != newUrl)
-            {
-                platformUrl = newUrl;
-                currentCountryID = "0";
-                textConsole.WriteLine("New platform URL: " + platformUrl);
-                return true;
-            }
-            return false;
-        }
+        //private bool CheckNewPlatformUrl(string url)
+        //{
+        //    var uri = new Uri(url);
+        //    var newUrl = uri.Scheme + "://" + uri.Host;
+        //    if (platformUrl != newUrl)
+        //    {
+        //        platformUrl = newUrl;
+        //        currentCountryID = "0";
+        //        textConsole.WriteLine("New platform URL: " + platformUrl);
+        //        return true;
+        //    }
+        //    return false;
+        //}
 
-        private string GenerateLoginFormData()
+
+        public override async Task<bool> Login(string requestUrl)
         {
-            var graphql = @"{
+            this.platformUrl = ExtractPlatformUrl(requestUrl);
+
+            try
+            {
+                var formData = @"{
                                   ""variables"": {
                                     ""input"": {
                                       ""username"": ""{username}"",
@@ -87,36 +89,19 @@ namespace File_Downloader
                                     }
                                   },
                                   ""query"": ""mutation ($input: LoginInput!) {\n  login(input: $input)\n}\n""
-                                }";
+                                }"
+                        .Replace("{username}", username)
+                        .Replace("{password}", password);
 
-            graphql = graphql.Replace("{username}", username);
-            graphql = graphql.Replace("{password}", password);
-
-            return graphql;
-        }
-
-        private async Task<bool> LoginHttpClient()
-        {
-            try
-            {
-                //handler.CookieContainer.Add(new Uri(platformUrl), new Cookie("CookieName", "cookie_value"));
-                var formData = GenerateLoginFormData();
                 var postBody = new StringContent(formData, Encoding.UTF8, "application/json");
-                textConsole.WriteLine(formData);
-
                 var res = await client.PostAsync(new Uri(platformUrl + loginPath), postBody);
-
                 var cookeJar = handler.CookieContainer.GetCookies(new Uri(platformUrl));
 
                 foreach (Cookie cookie in cookeJar)
                 {
-                    textConsole.WriteLine("Key:" + cookie.Name +" Value:" + cookie.Value);
-
-                    //check if staySignedIn cookie exists (can't see a better way to determine if you are logged in)
-                    //if (cookie.Name == "staysignedin")
                     if (cookie.Name == "SESSIONID")
                     {
-                        textConsole.WriteLine("SESSIONID:" + cookie.Value);
+                        textConsole.WriteLine("Logged into platform");
 
                         return true;
                     }
@@ -133,7 +118,6 @@ namespace File_Downloader
 
         public void CreateRelativePath(string path)
         {
-
             //if path is empty return
             if (path == "" || path == null || path == "\\")
             {
@@ -172,11 +156,6 @@ namespace File_Downloader
 
         public override async Task<bool> DownloadFileTaskAsync(Uri uri, ExcelRow row)
         {
-            if (CheckNewPlatformUrl(uri.OriginalString))
-            {
-                await LoginHttpClient();
-            }
-
             if (CheckIfFileExists(row.path, row.filename))
             {
                 return true;
@@ -187,7 +166,67 @@ namespace File_Downloader
                 await EmulateCountry(row.countryID);
             }
 
-            return await GenerateFile(uri, row);
+            try
+            {
+                //Note: extra slashes are used in later .net versions to allow file paths over 255 characters (but this will require settings a windows flag)
+                string fullPath = destinationPath + row.path + "\\" + row.filename;
+                string directory = Path.GetDirectoryName(fullPath);
+
+                if (directory != null && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                if (formMethod == Method.POST)
+                {
+                    List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
+
+                    if (row.payload != null)
+                    {
+                        string[] splitPayload = row.payload.Split('&');
+
+                        foreach (string parameter in splitPayload)
+                        {
+                            string[] keyValueSplit = parameter.Split('=');
+                            string key = keyValueSplit[0];
+                            string value = keyValueSplit[1];
+
+                            parameters.Add(new KeyValuePair<string, string>(key, value));
+                        }
+                    }
+
+                    using (var response = await client.PostAsync(uri, new FormUrlEncodedContent(parameters)))
+                    {
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            textConsole.WriteLine("Error: " + uri);
+                            return false;
+                        }
+
+                        var stream = await response.Content.ReadAsStreamAsync();
+                        FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.ReadWrite);
+                        await stream.CopyToAsync(fs);
+                        fs.Close();
+                    }
+                }
+
+                if (formMethod == Method.GET)
+                {
+                    using (var s = await client.GetStreamAsync(uri))
+                    {
+                        FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.ReadWrite);
+                        await s.CopyToAsync(fs);
+                        fs.Close();
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                textConsole.WriteLine("Error:" + e.Message);
+                return false;
+            }
         }
 
         protected override async Task<bool> EmulateCountry(string countryId)
@@ -216,70 +255,6 @@ namespace File_Downloader
             {
                 Console.WriteLine("\nException Caught!");
                 Console.WriteLine("Message :{0} ", e.Message);
-                return false;
-            }
-        }
-
-        public async Task<bool> GenerateFile(Uri uri, ExcelRow row)
-        {
-            try
-            {
-                //Note: extra slashes are used in later .net versions to allow file paths over 255 characters (but this will require settings a windows flag)
-                string fullPath = destinationPath + row.path + "\\" + row.filename;
-                string directory = Path.GetDirectoryName(fullPath);
-
-                if (directory != null && !Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                if (formMethod == Method.POST)
-                {
-                    textConsole.WriteLine("is posting?");
-                    List<KeyValuePair<string, string>> parameters = new List<KeyValuePair<string, string>>();
-
-                    if (row.payload != null)
-                    {
-                        string[] splitPayload = row.payload.Split('&');
-
-                        foreach (string parameter in splitPayload)
-                        {
-                            string[] keyValueSplit = parameter.Split('=');
-                            string key = keyValueSplit[0];
-                            string value = keyValueSplit[1];
-
-                            parameters.Add(new KeyValuePair<string, string>(key, value));
-                        }
-                    }
-
-                    var response = await client.PostAsync(uri, new FormUrlEncodedContent(parameters));
-
-                    textConsole.WriteLine(response.ReasonPhrase);
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        textConsole.WriteLine("Error: " + uri);
-                        return false;
-                    }
-                    var stream = await response.Content.ReadAsStreamAsync();
-                    FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.ReadWrite);
-                    await stream.CopyToAsync(fs);
-                }
-
-                if (formMethod == Method.GET)
-                {
-                    using (var s = await client.GetStreamAsync(uri))
-                    {
-                        FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.ReadWrite);
-                        await s.CopyToAsync(fs);
-                        fs.Close();
-                    }
-                }
-
-                return true;
-            }
-            catch (Exception e)
-            {
-                textConsole.WriteLine("Error:" + e.Message);
                 return false;
             }
         }

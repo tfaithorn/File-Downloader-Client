@@ -22,8 +22,8 @@ namespace File_Downloader
         public Method formMethod;
         public static char[] invalidFileCharacters = new char[] { ':', '/', '\\', '*', '?', '>', '<', '|' };
         public static char[] invalidFolderCharacters = new char[] { '#', '%', '&', '{', '}', '\\', '/', '<', '>', '*', '?', '$', '!', '\'', '"', ':', '@', '|', '`', '\t', '.' };
-        protected string platformUrl;
         protected string loginUrl;
+        protected string platformUrl;
         protected const string loginPath = "/login/graphql";
         protected const string emulationPath = "/emulation";
 
@@ -36,8 +36,8 @@ namespace File_Downloader
         protected string username;
         protected string password;
 
+        public abstract Task<bool> Login(string requestUrl);
         public abstract Task<bool> DownloadFileTaskAsync(Uri uri, ExcelRow row);
-
         protected abstract Task<bool> EmulateCountry(string countryId);
 
         protected bool CheckIfFileExists(string path, string filename)
@@ -60,6 +60,7 @@ namespace File_Downloader
         protected string ExtractPlatformUrl(string url)
         {
             var uri = new Uri(url);
+            this.platformUrl = uri.Host;
             return "https://" + uri.Host;
         }
 
@@ -118,7 +119,7 @@ namespace File_Downloader
             return foldername;
         }
 
-        public string SanitizeFileName(string filename)
+        public static string SanitizeFileName(string filename)
         {
             if (filename == null || filename == "")
             {
@@ -133,17 +134,6 @@ namespace File_Downloader
             }
 
             return filename;
-        }
-
-        public bool SetPlatformUrl(string url)
-        {
-            platformUrl = url;
-            return true;
-        }
-
-        public string GetPlatformUrl()
-        {
-            return platformUrl;
         }
     }
 }

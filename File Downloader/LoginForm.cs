@@ -14,15 +14,12 @@ namespace File_Downloader
     {
         private TextConsole textConsole;
         private Label loginLabel;
-        private Label usernameLabel;
-        private DownloaderClient downloaderClient;
         private WebViewClient webViewClient;
 
-        public LoginForm(DownloaderClient downloaderClient)
+        public LoginForm()
         {
             InitializeComponent();
             this.Text = "Login";
-            this.downloaderClient = downloaderClient;
             //this.webViewClient = webViewClient;
         }
 
@@ -34,11 +31,6 @@ namespace File_Downloader
         public void SetLoginLabel(Label label)
         {
             loginLabel = label;    
-        }
-
-        public void SetUsernameLabel(Label label)
-        {
-            usernameLabel = label;
         }
 
         private void label1_Click(object sender, EventArgs e)
@@ -53,11 +45,8 @@ namespace File_Downloader
 
         private void button1_Click(object sender, EventArgs e)
         {
-            string username = textBox1.Text;
-            string password = textBox2.Text;
-            
-            downloaderClient.SetLoginCredentials(username, password);
-            usernameLabel.Text = username;
+            Form1.username = textBox1.Text;
+            Form1.password = textBox2.Text;
 
             var form1 = new Form1();
             this.Close();
