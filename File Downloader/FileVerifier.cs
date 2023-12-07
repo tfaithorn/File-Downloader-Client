@@ -43,7 +43,6 @@ namespace File_Downloader
                         if (folderInfo.GetFiles().Length == 0)
                         {
                             textConsole.WriteLine(folderInfo.FullName);
-                            //emptyFolders++;
                         }
                     }
                     else
@@ -82,7 +81,7 @@ namespace File_Downloader
                 {
                     foreach (FileInfo file in files)
                     {
-                        textConsole.WriteLine(file.Name);
+                        textConsole.WriteLine(folderInfo.FullName + "/" + file.Name);
                     }
 
                 }

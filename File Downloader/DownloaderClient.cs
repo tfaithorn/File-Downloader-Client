@@ -9,7 +9,7 @@ using System.IO;
 namespace File_Downloader
 {
     /// <summary>
-    /// Base class for HTTP & Webview downloader clients
+    /// Base class for HTTP & Webview clients
     /// </summary>
     public abstract class DownloaderClient
     {

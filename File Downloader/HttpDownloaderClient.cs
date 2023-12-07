@@ -30,10 +30,10 @@ namespace File_Downloader
             //Add header to prevent platform from rejecting request
             this.client.DefaultRequestHeaders.Add("User-Agent", "custom");
 
-            //10 minutes (to match platform timer)
+            //10 minute timout to match platform timer
             this.client.Timeout = new System.TimeSpan(0,10,0);
 
-            //Note: To prevent country emulation blocking when it returns 302
+            //flag needed to prevent country emulation preventing downloads (returns 302)
             this.handler.AllowAutoRedirect = false;
 
             var cookieContainer = new CookieContainer();
@@ -43,7 +43,6 @@ namespace File_Downloader
 
         public void SelectCountry(string countryID)
         {
-
             var formContent = new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("countryId", countryID)
@@ -55,23 +54,7 @@ namespace File_Downloader
 
             textConsole.WriteLine("Current Country" + currentCountryID);
             return;
-
         }
-
-        //private bool CheckNewPlatformUrl(string url)
-        //{
-        //    var uri = new Uri(url);
-        //    var newUrl = uri.Scheme + "://" + uri.Host;
-        //    if (platformUrl != newUrl)
-        //    {
-        //        platformUrl = newUrl;
-        //        currentCountryID = "0";
-        //        textConsole.WriteLine("New platform URL: " + platformUrl);
-        //        return true;
-        //    }
-        //    return false;
-        //}
-
 
         public override async Task<bool> Login(string requestUrl)
         {
@@ -102,7 +85,9 @@ namespace File_Downloader
                     if (cookie.Name == "SESSIONID")
                     {
                         textConsole.WriteLine("Logged into platform");
-
+                        
+                        //Submitting the form to go to World level seems to be required, but I have no explanation for why.
+                        await EmulateCountry("0");
                         return true;
                     }
                 }
@@ -138,7 +123,6 @@ namespace File_Downloader
             //check if a folder exists. If it doesn't create it
             for (int i = 0; i < strArray.Length; i++)
             {
-
                 if (!Directory.Exists((destinationPath + newPath)))
                 {
                     textConsole.WriteLine("creating directory: " + newPath);
@@ -195,19 +179,36 @@ namespace File_Downloader
                         }
                     }
 
-                    using (var response = await client.PostAsync(uri, new FormUrlEncodedContent(parameters)))
-                    {
-                        if (!response.IsSuccessStatusCode)
-                        {
-                            textConsole.WriteLine("Error: " + uri);
-                            return false;
-                        }
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, uri);
 
-                        var stream = await response.Content.ReadAsStreamAsync();
-                        FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.ReadWrite);
-                        await stream.CopyToAsync(fs);
-                        fs.Close();
+                    request.Content = new FormUrlEncodedContent(parameters);
+
+                    var response = await client.SendAsync(request);
+
+                    if (!response.IsSuccessStatusCode) 
+                    {
+                        textConsole.WriteLine("Error: " + uri);
+                        return false;
                     }
+
+                    var stream = await response.Content.ReadAsStreamAsync();
+                    FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.ReadWrite);
+                    await stream.CopyToAsync(fs);
+                    fs.Close();
+
+                    //using (var response = await client.PostAsync(uri, new FormUrlEncodedContent(parameters)))
+                    //{
+                    //    if (!response.IsSuccessStatusCode)
+                    //    {
+                    //        textConsole.WriteLine("Error: " + uri);
+                    //        return false;
+                    //    }
+
+                    //    var stream = await response.Content.ReadAsStreamAsync();
+                    //    FileStream fs = new FileStream(fullPath, FileMode.Create, FileAccess.ReadWrite);
+                    //    await stream.CopyToAsync(fs);
+                    //    fs.Close();
+                    //}
                 }
 
                 if (formMethod == Method.GET)
