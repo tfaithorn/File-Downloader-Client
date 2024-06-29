@@ -4,9 +4,8 @@ The application is meant to be used in combination with the World Manager platfo
 Check out `downloaderclient.cs` to see how it works.
 
 ##
-Notes:
 - Invalid characters are stripped from the folder & file names.
-- If the folders in the relative path do not exist they will be created automatically.
+- If the folders in the relative path does not exist the folder will be created.
 
 ##
 There is code related to generating a screenshot with a webview, but this functionality was scapped.
